@@ -1,0 +1,106 @@
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="voliro_like">
+
+  <!-- Included URDF Files -->
+  <xacro:include filename="$(find tobas_description)/urdf/components/common.xacro"/>
+  <xacro:include filename="$(find tobas_description)/urdf/components/fmu/tobas_fc100.xacro"/>
+  <xacro:include filename="$(find tobas_description)/urdf/components/battery/hrb_3s_5000mah_50c.xacro"/>
+  <xacro:include filename="$(find tobas_description)/urdf/components/landing_gear/zhizicathy_electric_150.xacro"/>
+  <xacro:include filename="$(find tobas_voliro_like_description)/urdf/tmotor_1344.uadf"/>
+
+  <!-- Properties -->
+  <xacro:property name="arm_offset" value="0.3395"/>
+
+  <!-- Base Link -->
+  <link name="base_link"/>
+
+  <!-- Body -->
+  <joint name="frame_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="body"/>
+  </joint>
+  <link name="body">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://tobas_voliro_like_description/meshes/frame.stl" scale="1 1 1"/>
+      </geometry>
+      <xacro:insert_block name="white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://tobas_voliro_like_description/meshes/frame.stl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.827557"/>
+      <origin xyz="1.135e-3 0.003e-3 31.761e-3" rpy="0 0 0"/>
+      <inertia ixx="2.486e-3" ixy="1718e-9" ixz="14633e-9" iyy="2.441e-3" iyz="-177e-9" izz="4.396e-3"/>
+    </inertial>
+  </link>
+
+  <!-- Flight Controller -->
+  <xacro:tobas_fc100 parent="base_link">
+    <origin xyz="0 0 0.058" rpy="0 0 0"/>
+  </xacro:tobas_fc100>
+
+  <!-- Battery -->
+  <xacro:hrb_3s_5000mah_50c link_name="battery1" parent="base_link">
+    <origin xyz="0 0.06 0.070" rpy="0 0 0"/>
+  </xacro:hrb_3s_5000mah_50c>
+  <xacro:hrb_3s_5000mah_50c link_name="battery2" parent="base_link">
+    <origin xyz="0 -0.06 0.070" rpy="0 0 0"/>
+  </xacro:hrb_3s_5000mah_50c>
+
+  <!-- Tilt Rotor -->
+  <xacro:macro name="tilt_rotor" params="index direction yaw_deg">
+    <joint name="arm_${index}_joint" type="tilt">
+      <origin xyz="${arm_offset*cos(yaw_deg*deg2rad)} ${arm_offset*sin(yaw_deg*deg2rad)} 0.0305" rpy="0 0 ${yaw_deg*deg2rad}"/>
+      <axis xyz="1 0 0"/>
+      <parent link="base_link"/>
+      <child link="arm_${index}"/>
+
+      <!-- Dynamixel XC430-W150 @12V: https://emanual.robotis.com/docs/en/dxl/x/xc430-w150/ -->
+      <limit lower="${-pi}" upper="${pi}" velocity="${106*(2*pi)/60}" effort="1.6"/>
+    </joint>
+
+    <link name="arm_${index}">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://tobas_voliro_like_description/meshes/arm.stl" scale="1 1 1"/>
+        </geometry>
+        <xacro:insert_block name="black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://tobas_voliro_like_description/meshes/arm.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="144.803e-3"/>
+        <origin xyz="-13.846e-3 -0.014e-3 -1.095e-3" rpy="0 0 0"/>
+        <inertia ixx="30818e-9" ixy="183e-9" ixz="-804e-9" iyy="3.103e-4" iyz="-26.457e-9" izz="3.227e-4"/>
+      </inertial>
+    </link>
+
+    <xacro:tmotor_1344 parent="arm_${index}" index="${index}" direction="${direction}">
+      <origin xyz="0 0 0.013" rpy="0 0 0"/>
+    </xacro:tmotor_1344>
+  </xacro:macro>
+
+  <xacro:tilt_rotor index="0" direction="ccw" yaw_deg="30"/>
+  <xacro:tilt_rotor index="1" direction="cw" yaw_deg="90"/>
+  <xacro:tilt_rotor index="2" direction="ccw" yaw_deg="150"/>
+  <xacro:tilt_rotor index="3" direction="cw" yaw_deg="210"/>
+  <xacro:tilt_rotor index="4" direction="ccw" yaw_deg="270"/>
+  <xacro:tilt_rotor index="5" direction="cw" yaw_deg="330"/>
+
+  <!-- Landing Gear -->
+  <xacro:zhizicathy_electric_150 parent="base_link" distance="0.165" max_angle="${55*deg2rad}">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:zhizicathy_electric_150>
+
+</robot>
